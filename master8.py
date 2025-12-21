@@ -11,6 +11,7 @@ from av import AnalogValue
 from suntime import Sun
 from timediff import TimeDiff as timdiff
 from do_every import DoEvery
+from automation import Automation as func
 
 # network data exchange
 xfer = DataExchange()
@@ -50,9 +51,18 @@ _settime()
 sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
 
 #horaires
+# ex scale  pwm22.duty(int(func.scale(dim.value,0,100,0,512)))
+sunsetdec = timdiff.time_to_dec(sunset.value)[2]
+#sunset event calculated in decimalformat
+event_a = timdiff.dec_to_time(int(func.scale(sunsetdec,1600,2075,1950,2150)))[2]
+event_b = timdiff.dec_to_time(int(func.scale(event_a,1950,2150,2050,2200)))[2]
+event_c = timdiff.dec_to_time(int(func.scale(event_b,2050,2200,2250,2250)))[2]
+
 hor_matin = Schedule(1,"hor_matin",530,830)
-hor_midi = Schedule(2,"hor_midi",1130,1230)
-hor_soir = Schedule(3,"hor_soir",timdiff.offset(sunset.value,-15)[2],timdiff.offset(sunset.value,180)[2])
+hor_midi = Schedule(2,"hor_midi",1100,1300)
+hor_soir_a = Schedule(3,"hor_soir_a",timdiff.offset(sunset.value,-15)[2],event_a)
+hor_soir_b = Schedule(4,"hor_soir_b",event_a,event_b)
+hor_soir_c = Schedule(5,"hor_soir_c",event_b,event_c)
 
 
 #function stop board
@@ -98,7 +108,7 @@ async def dim_upm():
 #booting
 xfer.send_data({"route": "nred", "board": "esp32-Led-Cabinet", "state": "booting wait 1 sec..."}, SERVER_ADDR)
 xfer.send_data({"route": "nred", "board": "esp32-Led-Cabinet", "date-heure": str(actualTime(time.localtime())).encode("utf-8"), "tzone=":int(tz.value)}, SERVER_ADDR)
-xfer.send_data({"sunset":str(sunset.value), "sunset-on":str(hor_soir.start_time), "sunset-off":str(hor_soir.stop_time)}, SERVER_ADDR)
+xfer.send_data({"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-off":str(hor_soir_a.stop_time)}, SERVER_ADDR)
 
 
 def handle_xfer(msg):
@@ -151,9 +161,9 @@ async def main():
         
         if t1.every(1):
             sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
-            hor_soir.start_time = timdiff.offset(sunset.value,-15)[2]
-            hor_soir.stop_time = timdiff.offset(sunset.value,180)[2]
-            xfer.send_data({"sunset":str(sunset.value), "sunset-on":str(hor_soir.start_time), "sunset-off":str(hor_soir.stop_time)}, SERVER_ADDR)
+            hor_soir_a.start_time = timdiff.offset(sunset.value,-15)[2]
+            hor_soir_a.stop_time = timdiff.offset(sunset.value,180)[2]
+            xfer.send_data({"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-off":str(hor_soir_a.stop_time)}, SERVER_ADDR)
 
         if t2.every(1):
             _settime()
@@ -166,9 +176,15 @@ async def main():
         if hor_midi.changedOn(): await dim_up(255)
         if hor_midi.changedOff(): await dim_down(0)
         
-        hor_soir.update(time.localtime())
-        if hor_soir.changedOn(): await dim_up(255)
-        if hor_soir.changedOff(): await dim_down(0)
+        hor_soir_a.update(time.localtime())
+        if hor_soir_a.changedOn(): await dim_up(255)
+
+        hor_soir_b.update(time.localtime())
+        if hor_soir_b.changedOn(): await dim_down(126)
+
+        hor_soir_c.update(time.localtime())
+        if hor_soir_c.changedOn(): await dim_down(75)
+        if hor_soir_c.changedOff(): await dim_down(0)
 
         await uasyncio.sleep_ms(1)
 
