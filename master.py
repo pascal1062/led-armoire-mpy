@@ -23,10 +23,6 @@ SERVER_ADDR = "192.168.0.90"
 frequency = 5000
 led = PWM(Pin(16), frequency)
 led.duty(0)
-dim_value = 1
-
-#btn = ClickButton(5)
-#fade_up = False
 dim_value = 0
 
 fade_dem = BinaryValue(1,"fade")
@@ -106,9 +102,11 @@ async def dim_upm():
 
 
 #booting
+schedules = {"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-event-a":str(hor_soir_b.start_time), 
+             "sunset-event-b":str(hor_soir_c.start_time), "sunset-event-c":str(hor_soir_c.stop_time)}
 xfer.send_data({"route": "nred", "board": "esp32-Led-Cabinet", "state": "booting wait 1 sec..."}, SERVER_ADDR)
 xfer.send_data({"route": "nred", "board": "esp32-Led-Cabinet", "date-heure": str(actualTime(time.localtime())).encode("utf-8"), "tzone=":int(tz.value)}, SERVER_ADDR)
-xfer.send_data({"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-off":str(hor_soir_a.stop_time)}, SERVER_ADDR)
+xfer.send_data(schedules, SERVER_ADDR)
 
 
 def handle_xfer(msg):
@@ -138,7 +136,8 @@ async def main():
         
         await btn.update()
         if btn.clicks == 1: await dim_down(0)
-        if btn.clicks == -1 and btn.depressed: fade_dem.value = True
+        #if btn.clicks == -1 and btn.depressed: fade_dem.value = True
+        if btn.clicks == -1 and btn.depressed: await dim_up(255)
         if btn.depressed == False: fade_dem.value = False
 
         if fade_dem.value:
@@ -161,9 +160,19 @@ async def main():
         
         if t1.every(1):
             sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
+            sunsetdec = timdiff.time_to_dec(sunset.value)[2]
+            event_a = timdiff.dec_to_time(int(func.scale(sunsetdec,1600,2075,1950,2150)))[2]
+            event_b = timdiff.dec_to_time(int(func.scale(event_a,1950,2150,2050,2200)))[2]
+            event_c = timdiff.dec_to_time(int(func.scale(event_b,2050,2200,2250,2250)))[2]
             hor_soir_a.start_time = timdiff.offset(sunset.value,-15)[2]
-            hor_soir_a.stop_time = timdiff.offset(sunset.value,180)[2]
-            xfer.send_data({"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-off":str(hor_soir_a.stop_time)}, SERVER_ADDR)
+            hor_soir_a.stop_time = event_a
+            hor_soir_b.start_time = event_a
+            hor_soir_b.stop_time = event_b
+            hor_soir_c.start_time = event_b
+            hor_soir_c.stop_time = event_c
+            schedules = {"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-event-a":str(hor_soir_b.start_time), 
+                         "sunset-event-b":str(hor_soir_c.start_time), "sunset-event-c":str(hor_soir_c.stop_time)}
+            xfer.send_data(schedules, SERVER_ADDR)
 
         if t2.every(1):
             _settime()
