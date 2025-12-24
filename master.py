@@ -47,7 +47,6 @@ _settime()
 sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
 
 #horaires
-# ex scale  pwm22.duty(int(func.scale(dim.value,0,100,0,512)))
 sunsetdec = timdiff.time_to_dec(sunset.value)[2]
 #sunset event calculated in decimalformat
 event_a = timdiff.dec_to_time(int(func.scale(sunsetdec,1600,2075,1950,2150)))[2]
@@ -74,29 +73,26 @@ def actualTime(t):
     time_str = "{:02}:{:02}:{:02}".format(t[3],t[4],t[5])
     return date_str+" "+time_str
 
-
+#courbe dimming, 0-255 - moins long pour tracer la courbe
 async def dim_up(val):
     global dim_value
-    #was at 1023 (255)
-    while dim_value <= min(val,254):
+    while dim_value <= min(val,255):
         dim_value+=1 if dim_value >= 1 else 1
-        #led.duty(round(pow(2.0,dim_value/102.4)-1))
+        if dim_value == 256: led.duty(1023); break
         led.duty(round(pow(dim_value*2/512,2.8)*1024))
         await uasyncio.sleep_ms(5)
 
 
 async def dim_down(val):
     global dim_value
-    while dim_value >= min(max(1, val),254):
+    while dim_value >= min(max(1, val),255):
         dim_value-=1 if dim_value >= 1 else 0
-        #led.duty(round(pow(2.0,dim_value/102.4)-1))
         led.duty(round(pow(dim_value*2/512,2.8)*1024))
         await uasyncio.sleep_ms(5)
 
 
 async def dim_upm():
     global dim_value
-    #led.duty(round(pow(2.0,dim_value/102.4)-1))
     led.duty(round(pow(dim_value*2/512,2.8)*1024))
     await uasyncio.sleep_ms(0)
 
@@ -125,7 +121,6 @@ def handle_xfer(msg):
 async def main():
     btn = ClickButton(5)
     global dim_value
-    #global sunset
 
     while True:
         # Read data transfer
@@ -136,28 +131,8 @@ async def main():
         
         await btn.update()
         if btn.clicks == 1: await dim_down(0)
-        #if btn.clicks == -1 and btn.depressed: fade_dem.value = True
         if btn.clicks == -1 and btn.depressed: await dim_up(255)
-        if btn.depressed == False: fade_dem.value = False
 
-        if fade_dem.value:
-            #if dim_value >= 1023:
-            #    dim_value = 1024
-            #elif dim_value <= 0:
-            #    dim_value = 1
-            #elif dim_value >= 1000:
-            #    dim_value += 1
-            #else:
-            #    dim_value += 5
-            if dim_value >= 254:
-                dim_value = 255
-            elif dim_value <= 0:
-                dim_value = 1
-            else:
-                dim_value += 1
-            await dim_upm()
-    
-        
         if t1.every(1):
             sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
             sunsetdec = timdiff.time_to_dec(sunset.value)[2]
