@@ -73,28 +73,23 @@ def actualTime(t):
     time_str = "{:02}:{:02}:{:02}".format(t[3],t[4],t[5])
     return date_str+" "+time_str
 
+
 #courbe dimming, 0-255 - moins long pour tracer la courbe
-async def dim_up(val):
+async def dim_light(val):
     global dim_value
-    while dim_value <= min(val,255):
-        dim_value+=1 if dim_value >= 1 else 1
-        if dim_value == 256: led.duty(1023); break
-        led.duty(round(pow(dim_value*2/512,2.8)*1024))
-        await uasyncio.sleep_ms(5)
-
-
-async def dim_down(val):
-    global dim_value
-    while dim_value >= min(max(1, val),255):
-        dim_value-=1 if dim_value >= 1 else 0
-        led.duty(round(pow(dim_value*2/512,2.8)*1024))
-        await uasyncio.sleep_ms(5)
-
-
-async def dim_upm():
-    global dim_value
-    led.duty(round(pow(dim_value*2/512,2.8)*1024))
-    await uasyncio.sleep_ms(0)
+    if dim_value < val:
+        #dim up
+        while dim_value <= min(val,255):
+            dim_value+=1 if dim_value >= 1 else 1
+            if dim_value == 256: led.duty(1023); break
+            led.duty(round(pow(dim_value*2/512,2.8)*1024))
+            await uasyncio.sleep_ms(5)
+    else:
+        #dim down
+        while dim_value >= min(max(1, val),255):
+            dim_value-=1 if dim_value >= 1 else 0
+            led.duty(round(pow(dim_value*2/512,2.8)*1024))
+            await uasyncio.sleep_ms(5)   
 
 
 #booting
@@ -115,8 +110,9 @@ def handle_xfer(msg):
     if _msg == "/esp32-LedCab/system/set-time" and _cmd == "True": _settime(); xfer.resp_data(str(actualTime(time.localtime())+" tz"+str(tz.value)).encode("utf-8"), _sender)
     if _msg == "/esp32-LedCab/ledCab/value/get" and _cmd == "True": xfer.resp_data(str(led.duty()).encode("utf-8"), _sender)
     if _msg == "/esp32-LedCab/system/sunset/" and _cmd == "True": xfer.resp_data(str(sunset.value).encode("utf-8"), _sender)
-    if _msg == "/esp32-LedCab/system/sunset/on" and _cmd == "True": xfer.resp_data(str(timdiff.offset(sunset.value,-15)[2]).encode("utf-8"), _sender)
-    if _msg == "/esp32-LedCab/system/sunset/off" and _cmd == "True": xfer.resp_data(str(timdiff.offset(sunset.value,180)[2]).encode("utf-8"), _sender)
+    if _msg == "/esp32-LedCab/system/sunset/on" and _cmd == "True": xfer.resp_data(str(hor_soir_a.start_time).encode("utf-8"), _sender)
+    if _msg == "/esp32-LedCab/system/sunset/off" and _cmd == "True": xfer.resp_data(str(hor_soir_c.stop_time).encode("utf-8"), _sender)
+
 
 async def main():
     btn = ClickButton(5)
@@ -127,11 +123,11 @@ async def main():
         read = xfer.recv_data()
         if read is not None:
             handle_xfer(read)
-            if read[0][0] == "/esp32-LedCab/ledCab/value/set": await dim_up(int(read[0][1])) if int(read[0][1]) > dim_value else await dim_down(int(read[0][1]))
+            if read[0][0] == "/esp32-LedCab/ledCab/value/set": await dim_light(int(read[0][1]))
         
         await btn.update()
-        if btn.clicks == 1: await dim_down(0)
-        if btn.clicks == -1 and btn.depressed: await dim_up(255)
+        if btn.clicks == 1: await dim_light(0)
+        if btn.clicks == -1: await dim_light(255)
 
         if t1.every(1):
             sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
@@ -153,22 +149,22 @@ async def main():
             _settime()
 
         hor_matin.update(time.localtime())
-        if hor_matin.changedOn(): await dim_up(255)
-        if hor_matin.changedOff(): await dim_down(0)
+        if hor_matin.changedOn(): await dim_light(255)
+        if hor_matin.changedOff(): await dim_light(0)
 
         hor_midi.update(time.localtime())
-        if hor_midi.changedOn(): await dim_up(255)
-        if hor_midi.changedOff(): await dim_down(0)
+        if hor_midi.changedOn(): await dim_light(255)
+        if hor_midi.changedOff(): await dim_light(0)
         
         hor_soir_a.update(time.localtime())
-        if hor_soir_a.changedOn(): await dim_up(255)
+        if hor_soir_a.changedOn(): await dim_light(255)
 
         hor_soir_b.update(time.localtime())
-        if hor_soir_b.changedOn(): await dim_down(126)
+        if hor_soir_b.changedOn(): await dim_light(126)
 
         hor_soir_c.update(time.localtime())
-        if hor_soir_c.changedOn(): await dim_down(75)
-        if hor_soir_c.changedOff(): await dim_down(0)
+        if hor_soir_c.changedOn(): await dim_light(75)
+        if hor_soir_c.changedOff(): await dim_light(0)
 
         await uasyncio.sleep_ms(1)
 
