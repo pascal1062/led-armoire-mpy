@@ -1,0 +1,18 @@
+add wifi reconnect ...
+
+in settime.py at line #20 
+
+    try:
+        s.connect(addr)
+    except OSError:
+        pass
+
+add lines after except OSerror 
+
+    try:
+        s.connect(addr)
+    except OSError:
+        #trying to reconnect wifi
+        import wifi_connect
+        wifi_connect.do_connect()
+        pass

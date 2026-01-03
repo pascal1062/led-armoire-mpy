@@ -114,6 +114,12 @@ def handle_xfer(msg):
     if _msg == "/esp32-LedCab/system/sunset/off" and _cmd == "True": xfer.resp_data(str(hor_soir_c.stop_time).encode("utf-8"), _sender)
 
 
+def append_file(val):
+	f = open('log.txt','a')
+	f.write(str(actualTime(time.localtime()))+'; '+ str(val) +'\n')
+	f.close
+    
+
 async def main():
     btn = ClickButton(5)
     global dim_value
@@ -149,22 +155,22 @@ async def main():
             _settime()
 
         hor_matin.update(time.localtime())
-        if hor_matin.changedOn(): await dim_light(255)
-        if hor_matin.changedOff(): await dim_light(0)
+        if hor_matin.value() == True and hor_matin.changed(): append_file(hor_matin.value()); await dim_light(255)
+        if hor_matin.value() == False and hor_matin.changed(): append_file(hor_matin.value()); await dim_light(0)
 
         hor_midi.update(time.localtime())
-        if hor_midi.changedOn(): await dim_light(255)
-        if hor_midi.changedOff(): await dim_light(0)
+        if hor_midi.value() == True and hor_midi.changed(): append_file(hor_midi.value()); await dim_light(255)
+        if hor_midi.value() == False and hor_midi.changed(): append_file(hor_midi.value()); await dim_light(0)
         
         hor_soir_a.update(time.localtime())
-        if hor_soir_a.changedOn(): await dim_light(255)
+        if hor_soir_a.value() == True and hor_soir_a.changed(): append_file(hor_soir_a.value()); await dim_light(255)
 
         hor_soir_b.update(time.localtime())
-        if hor_soir_b.changedOn(): await dim_light(126)
+        if hor_soir_b.value() == True and hor_soir_b.changed(): append_file(hor_soir_b.value()); await dim_light(126)
 
         hor_soir_c.update(time.localtime())
-        if hor_soir_c.changedOn(): await dim_light(75)
-        if hor_soir_c.changedOff(): await dim_light(0)
+        if hor_soir_c.value() == True and hor_soir_c.changed(): append_file(hor_soir_c.value()); await dim_light(75)
+        if hor_soir_c.value() == False and hor_soir_c.changed(): append_file(hor_soir_c.value()); await dim_light(0)
 
         await uasyncio.sleep_ms(1)
 
