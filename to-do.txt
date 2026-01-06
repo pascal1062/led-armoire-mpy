@@ -16,3 +16,6 @@ add lines after except OSerror
         import wifi_connect
         wifi_connect.do_connect()
         pass
+
+
+#j'ai du trouble avec la pin5. j'ai changé pour la 18. peut-être mettre un resistance au lieu de pullip interne
