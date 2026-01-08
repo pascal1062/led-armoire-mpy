@@ -1,3 +1,9 @@
+import time
+
+'''
+    --- Important --- si on veut utiliser l'horaire "une fois ifonce",il faut caller le changedOn et aussi le changedOff
+    pour setter les newvalue lastvalue
+'''
 
 class Schedule():
     
@@ -10,8 +16,9 @@ class Schedule():
         self._lastvalue = False
 
 
-    def update(self,actual_time):
+    def update(self):
         output = False
+        actual_time = time.localtime()
 
         #get actual time as integer
         hour_min = int(str(actual_time[3]) + str('{:02}'.format(actual_time[4])))
@@ -22,6 +29,7 @@ class Schedule():
         #return output
     
     def value(self):
+        self.update()
         return self._newvalue
     
     def get_start_time(self):
@@ -37,6 +45,7 @@ class Schedule():
         self._stoptime = val
 
     def changed(self):
+        self.value()
         if self._newvalue != self._lastvalue:
             val = True
         else:
@@ -45,6 +54,7 @@ class Schedule():
         return val
 
     def changedOn(self):
+        self.value()
         if (self._newvalue != self._lastvalue) and (self._newvalue == True):
             val = True
             self._lastvalue = self._newvalue
@@ -53,6 +63,7 @@ class Schedule():
         return val
 
     def changedOff(self):
+        self.value()
         if (self._newvalue != self._lastvalue) and (self._newvalue == False):
             val = True
             self._lastvalue = self._newvalue

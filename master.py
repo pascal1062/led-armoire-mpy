@@ -16,7 +16,7 @@ from automation import Automation as func
 # network data exchange
 xfer = DataExchange()
 xfer.attach('192.168.0.20')
-read = None
+#read = None
 SERVER_ADDR = "192.168.0.90"
 
 # Under cabinet Led Light To Dim
@@ -38,6 +38,7 @@ dim_led.value = int(0)
 #timer Doevery
 t1 = DoEvery("t1", "min")
 t2 = DoEvery("t2", "hour")
+t3s = DoEvery("t3", "sec")
 
 #Create suntime from local city
 sun = Sun(46.82,-71.25,int(tz.value))
@@ -120,9 +121,9 @@ def handle_xfer(msg):
 
 
 def append_file(val):
-	f = open('log.txt','a')
-	f.write(str(actualTime(time.localtime()))+'; '+ str(val) +'\n')
-	f.close()
+    f = open('log.txt','a')
+    f.write(str(actualTime(time.localtime()))+'; '+ str(val) +'\n')
+    f.close()
     
 
 async def main():
@@ -141,12 +142,6 @@ async def main():
 
         if t1.every(1):
             #min
-            hor_matin.update(time.localtime())
-            hor_midi.update(time.localtime())        
-            hor_soir_a.update(time.localtime())
-            hor_soir_b.update(time.localtime())         
-            hor_soir_c.update(time.localtime())
-            
             schedules = {"sunset":str(sunset.value), "sunset-on":str(hor_soir_a.start_time), "sunset-event-a":str(hor_soir_b.start_time), 
                          "sunset-event-b":str(hor_soir_c.start_time), "sunset-event-c":str(hor_soir_c.stop_time)}
             xfer.send_data(schedules, SERVER_ADDR)
@@ -157,11 +152,11 @@ async def main():
             
             sunset.value = int(str(sun.get_sunset_time()[3]) + str('{:02}'.format(sun.get_sunset_time()[4])))
             sunset_dec.value = timdiff.time_to_dec(sunset.value)[2]
-            
             event_a.value = timdiff.dec_to_time(int(func.scale(sunset_dec.value,1600,2075,1950,2150)))[2]
             event_b.value = timdiff.dec_to_time(int(func.scale(event_a.value,1950,2150,2050,2200)))[2]
             event_c.value = timdiff.dec_to_time(int(func.scale(event_b.value,2050,2200,2250,2250)))[2]
-            
+
+        if t3s.every(1):
             hor_soir_a.start_time = timdiff.offset(sunset.value,-15)[2]
             hor_soir_a.stop_time = event_a.value
             hor_soir_b.start_time = event_a.value
@@ -169,19 +164,20 @@ async def main():
             hor_soir_c.start_time = event_b.value
             hor_soir_c.stop_time = event_c.value
 
+            if hor_matin.changedOn(): append_file(hor_matin.value()); await dim_light(255)
+            if hor_matin.changedOff(): append_file(hor_matin.value()); await dim_light(0)
 
-        if hor_matin.value() == True and hor_matin.changed(): append_file(hor_matin.value()); await dim_light(255)
-        if hor_matin.value() == False and hor_matin.changed(): append_file(hor_matin.value()); await dim_light(0)
+            if hor_midi.changedOn(): append_file(hor_midi.value()); await dim_light(255)
+            if hor_midi.changedOff(): append_file(hor_midi.value()); await dim_light(0)
 
-        if hor_midi.value() == True and hor_midi.changed(): append_file(hor_midi.value()); await dim_light(255)
-        if hor_midi.value() == False and hor_midi.changed(): append_file(hor_midi.value()); await dim_light(0)
+            if hor_soir_a.changedOn(): append_file(hor_soir_a.value()); await dim_light(255)
+            if hor_soir_a.changedOff(): None
 
-        if hor_soir_a.value() == True and hor_soir_a.changed(): append_file(hor_soir_a.value()); await dim_light(255)
+            if hor_soir_b.changedOn(): append_file(hor_soir_b.value()); await dim_light(126)
+            if hor_soir_b.changedOff(): None
 
-        if hor_soir_b.value() == True and hor_soir_b.changed(): append_file(hor_soir_b.value()); await dim_light(126)
-
-        if hor_soir_c.value() == True and hor_soir_c.changed(): append_file(hor_soir_c.value()); await dim_light(75)
-        if hor_soir_c.value() == False and hor_soir_c.changed(): append_file(hor_soir_c.value()); await dim_light(0)
+            if hor_soir_c.changedOn(): append_file(hor_soir_c.value()); await dim_light(75)
+            if hor_soir_c.changedOff(): append_file(hor_soir_c.value()); await dim_light(0)
 
         await uasyncio.sleep_ms(1)
 
