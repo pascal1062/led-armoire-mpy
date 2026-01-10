@@ -11,21 +11,21 @@ class DoEvery():
         
     def every(self, t):
         val = False
-        if time.ticks_diff(time.time(), self._end) < 0: self._end = time.time()
+        if (time.time() - self._end) < 0: self._end = time.time()
         if self._unit == "sec":
-            if time.ticks_diff(time.time(), self._end) >= t:
+            if (time.time() - self._end) >= t:
                 self._end = time.time()
                 self._newvalue = True
             else:
                 self._newvalue = False
         elif self._unit == "min":
-            if time.ticks_diff(time.time(), self._end) >= (t*60):
+            if (time.time() - self._end) >= (t*60):
                 self._end = time.time()
                 self._newvalue = True
             else:
                 self._newvalue = False
         elif self._unit == "hour":
-            if time.ticks_diff(time.time(), self._end) >= (t*3600):
+            if (time.time() - self._end) >= (t*3600):
                 self._end = time.time()
                 self._newvalue = True
             else:
