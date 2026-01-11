@@ -11,6 +11,7 @@ from av import AnalogValue
 from suntime import Sun
 from timediff import TimeDiff as timdiff
 from do_every import DoEvery
+from do_every_ms import DoEveryMS
 from automation import Automation as func
 
 # network data exchange
@@ -23,6 +24,10 @@ SERVER_ADDR = "192.168.0.90"
 frequency = 5000
 led = PWM(Pin(16), frequency)
 led.duty(0)
+
+#scan led
+scan_led = Pin(13, Pin.OUT)
+scan_led.value(1)
 
 # var
 fade_dem = BinaryValue(1,"fade")
@@ -39,6 +44,7 @@ dim_led.value = int(0)
 t1 = DoEvery("t1", "min")
 t2 = DoEvery("t2", "hour")
 t3s = DoEvery("t3", "sec")
+t4 = DoEveryMS("t4")
 
 #Create suntime from local city
 sun = Sun(46.82,-71.25,int(tz.value))
@@ -178,6 +184,9 @@ async def main():
 
             if hor_soir_c.changedOn(): append_file(hor_soir_c.value()); await dim_light(75)
             if hor_soir_c.changedOff(): append_file(hor_soir_c.value()); await dim_light(0)
+            
+        if t4.every_ms(250):
+            scan_led.value(1) if scan_led.value() == 0 else scan_led.value(0) 
 
         await uasyncio.sleep_ms(1)
 
