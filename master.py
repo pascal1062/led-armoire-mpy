@@ -170,20 +170,20 @@ async def main():
             hor_soir_c.start_time = event_b.value
             hor_soir_c.stop_time = event_c.value
 
-            if hor_matin.changedOn(): append_file(hor_matin.value()); await dim_light(255)
-            if hor_matin.changedOff(): append_file(hor_matin.value()); await dim_light(0)
+            if hor_matin.changedOn(): await dim_light(255)
+            if hor_matin.changedOff(): await dim_light(0)
 
-            if hor_midi.changedOn(): append_file(hor_midi.value()); await dim_light(255)
-            if hor_midi.changedOff(): append_file(hor_midi.value()); await dim_light(0)
+            if hor_midi.changedOn(): await dim_light(255)
+            if hor_midi.changedOff(): await dim_light(0)
 
-            if hor_soir_a.changedOn(): append_file(hor_soir_a.value()); await dim_light(255)
+            if hor_soir_a.changedOn(): await dim_light(255)
             if hor_soir_a.changedOff(): None
 
-            if hor_soir_b.changedOn(): append_file(hor_soir_b.value()); await dim_light(126)
+            if hor_soir_b.changedOn(): await dim_light(126)
             if hor_soir_b.changedOff(): None
 
-            if hor_soir_c.changedOn(): append_file(hor_soir_c.value()); await dim_light(75)
-            if hor_soir_c.changedOff(): append_file(hor_soir_c.value()); await dim_light(0)
+            if hor_soir_c.changedOn(): await dim_light(75)
+            if hor_soir_c.changedOff(): await dim_light(0)
             
         if t4.every_ms(250):
             scan_led.value(1) if scan_led.value() == 0 else scan_led.value(0) 
